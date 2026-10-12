@@ -155,8 +155,9 @@ def windows_busy_files(paths):
     invalid = ctypes.c_void_p(-1).value
     blocked = []
     for path in paths:
-        # FILE_READ_ATTRIBUTES, zero sharing, OPEN_EXISTING; supports directories too.
-        handle = create('\\\\?\\' + str(path), 0x80, 0, None, 3, 0x02000000, None)
+        # GENERIC_READ participates in sharing checks; attributes-only access does not.
+        # Zero sharing + OPEN_EXISTING, with backup semantics for directories. No writes.
+        handle = create('\\\\?\\' + str(path), 0x80000000, 0, None, 3, 0x02000000, None)
         if handle == invalid or handle is None:
             blocked.append({'pid': None, 'path': str(path),
                             'reason': 'locked_or_access_unknown', 'windows_error': ctypes.get_last_error()})

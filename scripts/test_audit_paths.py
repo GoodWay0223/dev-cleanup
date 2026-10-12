@@ -123,6 +123,12 @@ class AuditBoundaries(unittest.TestCase):
             self.assertFalse(item['review_ready'])
             self.assertTrue(any(f['path'] == str(self.output) for f in item['open_files']))
 
+    def test_open_writer_is_blocked(self):
+        with self.output.open('ab'):
+            item = self.snapshot(self.cache)['items'][0]
+            self.assertFalse(item['review_ready'])
+            self.assertTrue(any(f['path'] == str(self.output) for f in item['open_files']))
+
     def test_unknown_open_file_state_blocks_every_candidate(self):
         with patch.object(audit, 'open_files', side_effect=RuntimeError('inventory unavailable')):
             result = audit.audit([str(self.cache)], 1000)
