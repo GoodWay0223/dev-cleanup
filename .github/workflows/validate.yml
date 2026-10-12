@@ -1,0 +1,48 @@
+name: Validate skill
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  boundaries:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Validate read-only safety boundaries
+        run: python -B -m unittest discover -s scripts -p "test_*.py"
+      - name: Inspect pinned official Mole macOS entrypoint
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          git clone --quiet --depth 1 --branch V1.59.1 https://github.com/tw93/Mole.git "$RUNNER_TEMP/mole-upstream"
+          test "$(git -C "$RUNNER_TEMP/mole-upstream" rev-parse HEAD)" = "fe32f9915787c5420f1836dbdf726566956157c1"
+          bash "$RUNNER_TEMP/mole-upstream/mole" --version
+          bash "$RUNNER_TEMP/mole-upstream/mole" clean --help
+          bash "$RUNNER_TEMP/mole-upstream/mole" purge --help
+      - name: Inspect pinned official Mole Windows PowerShell 5.1 entrypoint
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $source = Join-Path $env:RUNNER_TEMP "mole-upstream"
+          git clone --quiet --depth 1 --branch V1.32.0-windows https://github.com/tw93/Mole.git $source
+          if ($LASTEXITCODE -ne 0) { throw "Cannot fetch official Mole release" }
+          $head = git -C $source rev-parse HEAD
+          if ($head -ne "a18aa1466227b3312831d14533ad8d481bbc1ada") { throw "Unexpected release commit" }
+          $entry = Join-Path $source "mole.ps1"
+          & $entry "--version"
+          & $entry clean "--help"
+          & $entry purge "--help"
+          & $entry analyze "--help"
