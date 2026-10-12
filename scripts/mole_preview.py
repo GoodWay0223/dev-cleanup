@@ -147,7 +147,7 @@ def main():
         json.dump(value, stream, ensure_ascii=False, indent=2)
         stream.write('\n')
     print(json.dumps({'report': str(report/'preview.json'), 'scan_state': value['scan_state'],
-                      'candidate_files_deleted': False}, ensure_ascii=False))
+                      'candidate_files_deleted': False}, ensure_ascii=True))
     return 0 if result['exit_code'] == 0 else 2
 
 
@@ -155,5 +155,5 @@ if __name__ == '__main__':
     try:
         sys.exit(main())
     except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
-        print(json.dumps({'error': str(exc)}, ensure_ascii=False), file=sys.stderr)
+        print(json.dumps({'error': str(exc)}, ensure_ascii=True), file=sys.stderr)
         sys.exit(2)

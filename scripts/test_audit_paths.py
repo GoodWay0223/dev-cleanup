@@ -2,6 +2,7 @@
 """Behavior checks using an isolated temporary repository; no user-file deletion."""
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -170,6 +171,12 @@ class AuditBoundaries(unittest.TestCase):
         report = self.root/'审计.json'
         audit.save(report, result, [str(candidate)])
         self.assertEqual(json.loads(report.read_text(encoding='utf-8'))['items'][0]['path'], str(candidate))
+        candidate.write_bytes(b'changed build output')
+        verification = subprocess.run([sys.executable, str(Path(audit.__file__).resolve()), 'verify', '--audit', str(report)],
+                                      capture_output=True, text=True,
+                                      env={**os.environ, 'PYTHONIOENCODING': 'ascii'})
+        self.assertEqual(verification.returncode, 2, verification.stdout + verification.stderr)
+        self.assertIn(str(candidate), json.loads(verification.stdout)['changed_or_blocked_paths'])
 
     def test_sibling_worktree_uncommitted_work_is_snapshotted(self):
         sibling = self.root/'other-checkout'

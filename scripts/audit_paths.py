@@ -323,7 +323,7 @@ def main():
         save(args.output, result, paths)
         print(json.dumps({'items': len(result['items']),
                           'review_ready': sum(p['review_ready'] for p in result['items']),
-                          'errors': result['errors'], 'report': str(args.output)}, ensure_ascii=False))
+                          'errors': result['errors'], 'report': str(args.output)}, ensure_ascii=True))
     else:
         before = json.loads(args.audit.read_text(encoding='utf-8-sig'))
         if before.get('schema') != 1:
@@ -335,7 +335,7 @@ def main():
         git_changed = before['repository_states'] != current['repository_states']
         ok = not changed and not git_changed and not before['errors'] and not current['errors']
         print(json.dumps({'unchanged_and_review_ready': ok, 'changed_or_blocked_paths': changed,
-                          'repository_state_changed': git_changed, 'errors': current['errors']}, ensure_ascii=False))
+                          'repository_state_changed': git_changed, 'errors': current['errors']}, ensure_ascii=True))
         return 0 if ok else 2
     return 0
 
@@ -344,5 +344,5 @@ if __name__ == '__main__':
     try:
         sys.exit(main())
     except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
-        print(json.dumps({'error': str(exc)}, ensure_ascii=False), file=sys.stderr)
+        print(json.dumps({'error': str(exc)}, ensure_ascii=True), file=sys.stderr)
         sys.exit(2)
