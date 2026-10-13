@@ -67,7 +67,7 @@
 
 ## 保存记录
 
-报告放在源码以外的持久附件目录，例如 macOS `~/.codex/attachments/mac-dev-cleanup-<date>-<unique-id>`，Windows `%USERPROFILE%\.codex\attachments\mac-dev-cleanup-<date>-<unique-id>`。不要把新报告放进待清理目录或公开仓库。
+报告放在源码以外的持久附件目录，例如 macOS `~/.codex/attachments/dev-cleanup-<date>-<unique-id>`，Windows `%USERPROFILE%\.codex\attachments\dev-cleanup-<date>-<unique-id>`。不要把新报告放进待清理目录或公开仓库。
 
 记录授权范围、精确截止时刻、候选来源、实际路径、原占用、保留理由、删除/失败/跳过项、核验结果及前后 `df`。隐藏凭据；不把环境变量、媒体内容或完整未提交 diff 复制进报告。
 

@@ -15,7 +15,7 @@ import audit_paths as audit
 
 class AuditBoundaries(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix='mac-dev-cleanup-validation-')
+        self.temp = tempfile.TemporaryDirectory(prefix='dev-cleanup-validation-')
         self.root = Path(self.temp.name).resolve()
         self.repo = self.root/'project'
         self.repo.mkdir()

@@ -1,4 +1,4 @@
 interface:
   display_name: "Mole 开发产物安全清理"
   short_description: "以 Mole 为主清理开发产物，支持 Mac 与 Windows，保留源码和可能有用的资料"
-  default_prompt: "使用 $mac-dev-cleanup 以 Mole 为主检查本机开发缓存和旧测试产物，只清理确认无用的内容，保留不确定项。"
+  default_prompt: "使用 $dev-cleanup 以 Mole 为主检查本机开发缓存和旧测试产物，只清理确认无用的内容，保留不确定项。"

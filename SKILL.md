@@ -1,5 +1,5 @@
 ---
-name: mac-dev-cleanup
+name: dev-cleanup
 description: 以 Mole 为主安全清理开发缓存、旧模拟器和测试截图录屏，macOS 为主并兼容 Windows。用于空间不足、盘点占用或照常清理；保留源码、依赖、项目历史和可能有用的资料。
 ---
 

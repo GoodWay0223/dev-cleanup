@@ -11,21 +11,23 @@
 macOS：
 
 ~~~bash
-git clone https://github.com/GoodWay0223/mac-dev-cleanup.git ~/.codex/skills/mac-dev-cleanup
+git clone https://github.com/GoodWay0223/dev-cleanup.git ~/.codex/skills/dev-cleanup
 ~~~
 
 Windows PowerShell：
 
 ~~~powershell
-git clone https://github.com/GoodWay0223/mac-dev-cleanup.git "$env:USERPROFILE\.codex\skills\mac-dev-cleanup"
+git clone https://github.com/GoodWay0223/dev-cleanup.git "$env:USERPROFILE\.codex\skills\dev-cleanup"
 ~~~
 
-如果设置了 CODEX_HOME，使用它的 skills/mac-dev-cleanup 路径。已有同名 Skill 时保留本地改动；不要覆盖目录。安装后重新加载 Skill 列表或打开新对话。
+如果设置了 CODEX_HOME，使用它的 skills/dev-cleanup 路径。已有同名 Skill 时保留本地改动；不要覆盖目录。安装后重新加载 Skill 列表或打开新对话。
+
+原名 mac-dev-cleanup。已有安装请保留本地改动，将 Skill 目录改名为 dev-cleanup，并更新 Git remote；不要保留两份重复安装。旧 GitHub 仓库地址可通过重定向访问，新安装使用本页地址。
 
 在 Codex 中使用：
 
 ~~~text
-用 $mac-dev-cleanup 检查这台电脑和其他项目的开发缓存，确定无用的直接清掉，不确定的保留。
+用 $dev-cleanup 检查这台电脑和其他项目的开发缓存，确定无用的直接清掉，不确定的保留。
 ~~~
 
 Mole 未安装时，这个请求不会自动授权安装。可明确补充“先安装 Mole”。官方安装、版本差异和可用选项见 [Mole 与平台用法](references/mole-platforms.md)。
