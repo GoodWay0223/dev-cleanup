@@ -84,6 +84,34 @@ class AuditBoundaries(unittest.TestCase):
         self.assertFalse(item['review_ready'])
         self.assertTrue(item['protected'])
 
+    def test_xcode_build_records_are_preserved_without_database_files(self):
+        for name in ('XCBuildData', 'opaque.xcbuilddata'):
+            folder = self.cache/name
+            folder.mkdir()
+            (folder/'build-request.bin').write_bytes(b'unique build record')
+            item = self.snapshot(folder)['items'][0]
+            self.assertFalse(item['review_ready'], item)
+            self.assertTrue(item['protected'])
+        parent = self.snapshot(self.cache)['items'][0]
+        self.assertFalse(parent['review_ready'])
+        self.assertEqual(len(parent['protected']), 2)
+
+    @unittest.skipIf(sys.platform == 'win32', 'Windows uses exclusive probes instead of the POSIX handle inventory')
+    def test_open_file_blocks_nested_candidates_without_prefix_false_positives(self):
+        untouched = self.cache/'unrelated'
+        untouched.mkdir()
+        (untouched/'generated.bin').write_bytes(b'regenerable sample')
+        unrelated_path = Path(str(self.cache)+'-lookalike')/'other.bin'
+        with patch.object(audit, 'open_files', return_value=[('7', self.output), ('8', unrelated_path)]):
+            result = audit.audit([str(self.cache), str(self.output), str(untouched)], 1000)
+        self.assertFalse(result['errors'])
+        items = result['items']
+        self.assertFalse(items[0]['review_ready'])
+        self.assertFalse(items[1]['review_ready'])
+        self.assertTrue(items[2]['review_ready'])
+        self.assertEqual(items[0]['open_files'], [{'pid': '7', 'path': str(self.output)}])
+        self.assertEqual(items[1]['open_files'], [{'pid': '7', 'path': str(self.output)}])
+
     @unittest.skipUnless(sys.platform == 'win32', 'Windows directory junction boundary')
     def test_windows_junction_is_not_followed(self):
         target = self.root/'valuable-folder'

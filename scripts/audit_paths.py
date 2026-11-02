@@ -16,12 +16,12 @@ PROTECTED_PARTS = {
     '.git', 'node_modules', '.venv', 'venv', 'vendor', 'packages', 'Pods', 'SourcePackages',
     'checkouts', 'repositories', 'references', 'reference', '.media', '.bench',
     '.runs', 'resources', 'Resources', 'assets', 'Assets.xcassets', 'fixtures',
-    'test-fixtures', 'DeviceSupport', 'Archives', 'Logs', 'publish', '.vs',
+    'test-fixtures', 'DeviceSupport', 'Archives', 'Logs', 'XCBuildData', 'publish', '.vs',
 }
 PROTECTED_SUFFIXES = {
     '.xcresult', '.xcarchive', '.photoslibrary', '.app', '.ipa', '.dSYM',
     '.framework', '.bundle', '.sqlite', '.sqlite3', '.db', '.pem', '.key',
-    '.p12', '.mobileprovision', '.exe', '.dll', '.pdb', '.msix', '.msi',
+    '.p12', '.mobileprovision', '.exe', '.dll', '.pdb', '.msix', '.msi', '.xcbuilddata',
 }
 SOURCE_SUFFIXES = {'.swift', '.ts', '.tsx', '.js', '.jsx', '.py', '.rs', '.go',
                    '.c', '.h', '.m', '.mm', '.kt', '.java', '.toml', '.yaml', '.yml'}
@@ -214,13 +214,25 @@ def tree(path, max_nodes):
             'protected': protected, 'symlinks': links, 'errors': errors}, files
 
 
+def index_open_files(paths, opened):
+    """Match handles to exact candidates and ancestors once, without prefix matches."""
+    indexed = {Path(raw): [] for raw in paths}
+    for pid, path in opened:
+        for candidate in (path, *path.parents):
+            if candidate in indexed:
+                indexed[candidate].append({'pid': pid, 'path': str(path)})
+    return indexed
+
+
 def audit(paths, max_nodes):
+    paths = list(paths)
     global_errors = []
     try:
         opened = open_files()
     except (OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
         opened = []
         global_errors.append(str(exc))
+    opened_by_candidate = index_open_files(paths, opened)
     items, repos = [], set()
     for raw in paths:
         path = Path(raw)
@@ -234,7 +246,7 @@ def audit(paths, max_nodes):
                 entry['open_files'] = windows_busy_files(files + ([path] if path.is_dir() else []))
                 entry['open_file_check'] = 'windows_exclusive_read_only_probe'
             else:
-                entry['open_files'] = [{'pid': pid, 'path': str(p)} for pid, p in opened if contained(p, path)]
+                entry['open_files'] = opened_by_candidate[path]
                 entry['open_file_check'] = 'lsof_inventory'
             repo = repo_for(path)
             entry['repository'] = str(repo) if repo else None
