@@ -1,6 +1,15 @@
-# Mole 开发产物安全清理 Skill
+# dev-cleanup：开发电脑安全清理 Skill
 
-以 [Mole](https://github.com/tw93/Mole) 为主要盘点与清理工具，补充跨项目的开发产物保留规则。**macOS 为主，同时支持 Windows**。用于 Codex、Xcode 和其他编程项目积累的构建缓存、旧模拟器、独立测试截图、抽帧和录屏。
+给 AI 智能体（Claude Code、Codex 等）用的磁盘清理 Skill。以 [Mole](https://github.com/tw93/Mole) 做通用清理，补充开发场景的判定规则、缓存地图和只读辅助脚本。**macOS 为主，同时支持 Windows**。
+
+覆盖：
+
+- 多个 AI 会话留下的 git 工作树和本地分支（游戏项目每个 2–3 GB，最容易把磁盘占满）
+- Xcode DerivedData、iOS 模拟器和多版本 Xcode
+- Android 构建输出、Gradle、SDK/NDK 旧版本和模拟器
+- Godot、Unity、Blender 的导入缓存、着色器缓存、日志和临时文件
+- 智能体测试留下的截图、录屏和 Chrome 测试配置目录
+- 构建输出、发布暂存目录和包管理器缓存
 
 用户明确要求清理时，直接删除通过用途与安全核验的项目；用途不清、仍在使用、与依赖或验收资料混在一起的内容先保留。只要求检查时，不执行删除。
 
@@ -20,15 +29,25 @@ Windows PowerShell：
 git clone https://github.com/GoodWay0223/dev-cleanup.git "$env:USERPROFILE\.codex\skills\dev-cleanup"
 ~~~
 
+Claude Code（命令行或桌面端）：
+
+~~~bash
+git clone https://github.com/GoodWay0223/dev-cleanup.git ~/.claude/skills/dev-cleanup
+~~~
+
 如果设置了 CODEX_HOME，使用它的 skills/dev-cleanup 路径。已有同名 Skill 时保留本地改动；不要覆盖目录。安装后重新加载 Skill 列表或打开新对话。
 
 原名 mac-dev-cleanup。已有安装请保留本地改动，将 Skill 目录改名为 dev-cleanup，并更新 Git remote；不要保留两份重复安装。旧 GitHub 仓库地址可通过重定向访问，新安装使用本页地址。
 
-在 Codex 中使用：
+使用示例：
 
 ~~~text
-用 $dev-cleanup 检查这台电脑和其他项目的开发缓存，确定无用的直接清掉，不确定的保留。
+用 dev-cleanup 清理这台电脑，确定能删的先删，不确定的列出来。
+用 dev-cleanup 看看哪些智能体工作树可以删，只出报告。
+用 dev-cleanup 设置每天晚上 10 点自动清理。
 ~~~
+
+Codex 中可写 `$dev-cleanup`，Claude Code 中可写 `/dev-cleanup` 或直接用自然语言描述。
 
 Mole 未安装时，这个请求不会自动授权安装。可明确补充“先安装 Mole”。官方安装、版本差异和可用选项见 [Mole 与平台用法](references/mole-platforms.md)。
 
@@ -36,12 +55,16 @@ Mole 未安装时，这个请求不会自动授权安装。可明确补充“先
 
 | 类别 | 默认规则 |
 | --- | --- |
+| 智能体工作树/分支 | 没人在用、闲置 24 小时以上、无未提交改动、无手写未跟踪文件、提交已在远端或 PR 已合并 |
+| 引擎导入缓存 | Godot `.godot`、Unity `Library` 等，只对闲置工作树/项目清，代码保留 |
 | 构建/索引缓存 | 证明可由现存源码重建、未被 Git 跟踪、目录全部忽略、没有活动使用 |
 | iOS 模拟器 | 仅 Mac；可靠最后使用时间超过 72 小时、已关机且没有独有待保留资料 |
 | 独立测试影像 | 超过 7 天，核实测试来源及当前用途；以可靠时间中的最新值为准 |
-| 源码与 Git | 保留源码、未提交工作、分支、stash、worktree 和可达历史；不因年代久远删除 |
+| 源码与 Git | 保留源码、未提交工作、未推送分支、stash、标签和可达历史；不碰远端 |
 | 依赖与证据 | 保留 node_modules、虚拟环境、Pods、SwiftPM/NuGet 包、结果包、日志、发布和签名产物 |
 | 个人和系统资料 | 保留照片、原始素材、数据库、备份、整个临时目录、回收站、WSL/Docker 数据等 |
+
+完整的工具清单见 [缓存地图](references/cache-map.md)，工作树规则见 [智能体工作树](references/agent-worktrees.md)，告急顺序和定时清理见 [定时与紧急清理](references/routine.md)。
 
 时间门槛可以由本次指令调整，但年龄和大小本身不能证明无用。Windows 不运行 Xcode 或 simctl，也不默认清理 Windows 系统目录。详细判断依据见 [清理边界](references/cleanup-boundaries.md)。
 
@@ -58,6 +81,14 @@ python3 scripts/mole_preview.py analyze --path /absolute/project/cache
 ~~~
 
 Windows 用 py -3 替换 python3；analyze 仅包装 Mac JSON 模式。默认私人报告保存在 ~/.codex/attachments，禁止放入 Git 仓库。包装器没有删除入口；Mole 可以写自身的预览清单和配置。退出码 0 也不保证完整扫描。
+
+检查智能体工作树和本地分支（只读，不 fetch、不删除）：
+
+~~~bash
+python3 scripts/worktree_report.py /absolute/main-checkout --gh owner/repo --keep release-tools --asset 'game/data/*'
+~~~
+
+每个工作树给出 removable / removable_after_backup / keep（附原因），闲置但有改动的工作树会列出可单独清掉的导入缓存。
 
 冻结候选路径 JSON 数组后，审计再复核：
 
