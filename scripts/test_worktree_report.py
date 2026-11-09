@@ -92,6 +92,14 @@ class WorktreeReport(unittest.TestCase):
         trees, _ = self.verdicts()
         self.assertEqual(trees['godot']['verdict'], 'removable', trees['godot'])
 
+    def test_dependency_install_is_not_handmade(self):
+        path = self.add_worktree('deps')
+        (path/'node_modules'/'pkg').mkdir(parents=True)
+        (path/'node_modules'/'pkg'/'index.js').write_text('module.exports = 1\n')
+        self.age(path)
+        trees, _ = self.verdicts()
+        self.assertEqual(trees['deps']['verdict'], 'removable', trees['deps'])
+
     def test_tracked_change_blocks(self):
         path = self.add_worktree('dirty')
         (path/'src.gd').write_text('extends Node2D\n')

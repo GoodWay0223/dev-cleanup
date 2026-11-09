@@ -33,7 +33,7 @@ description: 安全清理开发电脑的磁盘空间（macOS 为主，兼容 Win
    - Android、Godot、Unity、Blender、浏览器测试配置、harness 自身：见 [缓存地图](references/cache-map.md)。
    - 每项检查：是否有进程在用（`lsof`/`pgrep`）、最近是否有人改、能否重建、被 git 跟踪与否。
 4. **先清代价低的**：免重建 → 用到再建 → 重下载。工具自带的清理命令（`npm cache clean`、`pnpm store prune`、`brew cleanup`、`simctl delete unavailable`、`gradlew --stop` 后清输出）优先于直接删目录。
-5. **Mole**：先读 [Mole 与平台用法](references/mole-platforms.md)。用户级常规清理用 `timeout 900 mo clean < /dev/null`（非交互，跳过需要 sudo 的系统项）；要先看范围时用 `mo clean --dry-run` 或 `scripts/mole_preview.py`。`mo purge` 会碰依赖目录，默认不执行。
+5. **Mole**：先读 [Mole 与平台用法](references/mole-platforms.md)。用户级常规清理用 `timeout 600 mo clean < /dev/null`（非交互，跳过需要 sudo 的系统项）；要先看范围时用 `mo clean --dry-run` 或 `scripts/mole_preview.py`。`mo purge` 会碰依赖目录，默认不执行。
 6. **需要留痕时冻结清单再删**：对一批自定义缓存或媒体，可先用 `scripts/audit_paths.py snapshot` 冻结，删除前 `verify`，变化的跳过：
 
    ```bash

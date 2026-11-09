@@ -26,6 +26,7 @@
 
 ## Git
 
+- `.git/objects/pack/tmp_pack_*`、`.tmp-*`：fetch/clone 中途失败留下的残包，git 不会引用。磁盘满时多个会话同时 fetch 很容易留下好几 GB（实测 9 个共 2.5 GB）。✅ 免重建：确认没有 git 进程（`pgrep -fl 'git (fetch|clone|index-pack|repack|gc)'`）、没有进程打开它们、文件超过 1 小时未改动后删除；删后 `git count-objects -v` 复核。
 - `git worktree prune`：只清理目录已不存在的工作树记录，安全。
 - `git gc --prune=2.weeks.ago`：常规维护，允许；不缩短 reflog，不 `--prune=now`。
 - 从不删远端分支、不关 PR、不 push。用户说“只删本机”时尤其如此。
@@ -97,7 +98,7 @@
 ## Mole（系统和应用的通用垃圾）
 
 - 非交互运行：`mo clean < /dev/null`。stdin 不是终端时 Mole 跳过需要 sudo 的系统缓存，只清用户级，不会卡在密码提示。
-- 加超时：`timeout 900 mo clean < /dev/null`。它可能卡在扫描 `~/Movies` 等受隐私保护的目录（macOS 权限弹窗），超时后 `pkill -f "mole/.*/clean.sh"`，已完成的部分有效。
+- 加超时：`timeout 600 mo clean < /dev/null`。它可能卡在扫描 `~/Movies` 等受隐私保护的目录（macOS 权限弹窗）或“应用缓存”一步，超时后 `pkill -f "mole/.*/clean.sh"`，已完成的部分有效。
 - 日志在 `~/Library/Logs/mole/operations.log`，汇报时可引用实际删除项。
 
 ## 🚫 一律不碰

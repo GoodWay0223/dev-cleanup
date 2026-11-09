@@ -17,7 +17,10 @@ import subprocess
 import sys
 import time
 
-DEFAULT_GENERATED = ['*.import', '*.uid', '.godot/*', '*/.godot/*', '.DS_Store', '*/.DS_Store']
+DEFAULT_GENERATED = ['*.import', '*.uid', '.godot', '.godot/*', '*/.godot', '*/.godot/*',
+                     '.DS_Store', '*/.DS_Store',
+                     # Dependency installs and bytecode are rebuilt from lock files / sources.
+                     'node_modules', '*/node_modules', '__pycache__', '*/__pycache__']
 # Large regenerable trees that are skipped when looking for the newest hand-made change.
 DEFAULT_SKIP_DIRS = {'.git', '.godot', 'node_modules', 'Library', 'Temp', '.gradle',
                      '.venv', 'venv', 'DerivedData', '__pycache__', '.next', '.turbo'}
