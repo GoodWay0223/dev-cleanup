@@ -22,7 +22,7 @@ GIT_ID = ['-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=' + os.devnull,
 
 def args(**overrides):
     values = dict(base='origin/main', gh=None, idle_hours=24, cache_idle_hours=72, keep=[],
-                  generated=[], asset=[], skip_dir=[], backup_files=5, backup_limit=256 * 1024,
+                  generated=[], asset=[], local_patch=[], skip_dir=[], backup_files=5, backup_limit=256 * 1024,
                   max_nodes=100000, json=None)
     values.update(overrides)
     return argparse.Namespace(**values)
@@ -99,6 +99,22 @@ class WorktreeReport(unittest.TestCase):
         self.age(path)
         trees, _ = self.verdicts()
         self.assertEqual(trees['deps']['verdict'], 'removable', trees['deps'])
+
+    def test_repeatable_local_patch_is_not_work(self):
+        patched = self.add_worktree('patched')
+        (patched/'src.gd').write_text('extends Node3D\n')
+        self.age(patched)
+        mixed = self.add_worktree('mixed')
+        (mixed/'src.gd').write_text('extends Node3D\n# real edit\n')
+        self.age(mixed)
+        subs = [wr.parse_patch('Node=Node3D')]
+        trees, _ = self.verdicts(local_patch=subs)
+        self.assertEqual(trees['patched']['verdict'], 'removable', trees['patched'])
+        self.assertEqual(trees['patched']['local_patch_only'], 1)
+        self.assertEqual(trees['mixed']['verdict'], 'keep')
+        self.assertEqual(trees['mixed']['tracked_changes'], 1)
+        trees, _ = self.verdicts()
+        self.assertEqual(trees['patched']['verdict'], 'keep', 'without --local-patch the edit is work')
 
     def test_tracked_change_blocks(self):
         path = self.add_worktree('dirty')

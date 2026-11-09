@@ -51,7 +51,7 @@
 | Godot 安卓项目的 `android/build/` | ⚠️ | 这是 Godot 安装的 **Gradle 构建模板**，不只是输出。只有它被 git 忽略、且项目导出脚本在缺失时会自动 `--install-android-build-template` 才删；否则只删其中的 `build/`、`.gradle/` 输出子目录 |
 | `~/.gradle/caches/build-cache-*`、`~/.gradle/daemon/*/日志` | ✅ 用到再建 | 没有 Gradle 进程时清 |
 | `~/.gradle/caches/<旧Gradle版本>`、`~/.gradle/wrapper/dists/<旧版本>` | ⚠️ 重下载 | 保留各项目 `gradle-wrapper.properties` 用到的版本 |
-| Android SDK `ndk/<版本>`、`build-tools/<版本>`、`system-images/` | ⚠️ 重下载 | 保留项目 `ndkVersion`、`compileSdk`、导出设置引用的版本；同时装了多个 NDK（每个约 3 GB）时，其余版本可列给用户 |
+| Android SDK `ndk/<版本>`、`build-tools/<版本>`、`system-images/` | ⚠️ 重下载 | 保留项目 `ndkVersion`、`compileSdk`、导出设置引用的版本；同时装了多个 NDK（每个约 3 GB）时，其余版本可列给用户。判断前搜项目的 SDK 安装脚本、CI 工作流和 `ANDROID_NDK_ROOT`：常见是两个都在用（如 Godot 安卓模板的 Gradle 要求一个版本，godot-cpp/原生插件用另一个），访问时间不可靠（全盘扫描也会更新它） |
 | 模拟器 AVD `~/.android/avd/*.avd` | ⚠️ | 同 iOS 模拟器：长期不用且用户同意时 `avdmanager delete avd -n <名字>` |
 | `~/.android/cache` | ✅ | 可清 |
 

@@ -85,7 +85,7 @@ Windows 用 py -3 替换 python3；analyze 仅包装 Mac JSON 模式。默认私
 检查智能体工作树和本地分支（只读，不 fetch、不删除）：
 
 ~~~bash
-python3 scripts/worktree_report.py /absolute/main-checkout --gh owner/repo --keep release-tools --asset 'game/data/*'
+python3 scripts/worktree_report.py /absolute/main-checkout --gh owner/repo --keep release-tools --asset 'game/data/*' --local-patch 'old_text=new_text'
 ~~~
 
 每个工作树给出 removable / removable_after_backup / keep（附原因），闲置但有改动的工作树会列出可单独清掉的导入缓存。

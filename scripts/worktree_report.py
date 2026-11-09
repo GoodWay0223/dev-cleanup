@@ -123,6 +123,30 @@ def status_entries(tree, untracked):
     return entries
 
 
+def parse_patch(spec):
+    old, sep, new = spec.partition('=')
+    if not sep or not old:
+        raise argparse.ArgumentTypeError('expected OLD=NEW')
+    return old.encode(), new.encode()
+
+
+def only_local_patch(tree, rel, subs):
+    """True when the working file is exactly HEAD's version with the given substitutions applied."""
+    target = tree/rel
+    if target.is_symlink() or not target.is_file():
+        return False
+    result = git(tree, 'show', f'HEAD:{rel}', valid=(0, 128))
+    if result.returncode != 0:
+        return False
+    expected = result.stdout
+    for old, new in subs:
+        expected = expected.replace(old, new)
+    try:
+        return target.read_bytes() == expected and expected != result.stdout
+    except OSError:
+        return False
+
+
 def head_safety(tree, head, base, gh_repo, branch):
     if git(tree, 'merge-base', '--is-ancestor', head, base, valid=(0, 1)).returncode == 0:
         return 'in_base'
@@ -180,6 +204,10 @@ def inspect_worktree(record, base, args, opened, now):
         reasons.append(f'changed {info["idle_hours"]}h ago (< {args.idle_hours}h)')
     generated = DEFAULT_GENERATED + args.generated
     tracked = [p for code, p in status_entries(path, False) if not matches(p, generated)]
+    if args.local_patch:
+        patched = [p for p in tracked if only_local_patch(path, p, args.local_patch)]
+        info['local_patch_only'] = len(patched)
+        tracked = [p for p in tracked if p not in patched]
     info['tracked_changes'] = len(tracked)
     if tracked:
         reasons.append(f'{len(tracked)} uncommitted tracked change(s), e.g. {tracked[0]}')
@@ -255,13 +283,16 @@ def main():
     parser.add_argument('--generated', action='append', default=[], help='Extra glob of generated files')
     parser.add_argument('--asset', action='append', default=[],
                         help='Glob of untracked downloaded assets that do not count as hand-made work')
+    parser.add_argument('--local-patch', action='append', default=[], type=parse_patch, metavar='OLD=NEW',
+                        help='Text substitution of a repeatable local patch that is never committed; a tracked '
+                             'file equal to HEAD with these substitutions applied is not counted as work')
     parser.add_argument('--skip-dir', action='append', default=[], help='Extra directory name to skip for idle time')
     parser.add_argument('--backup-files', type=int, default=5,
                         help='At most this many small untracked files may be backed up instead of blocking')
     parser.add_argument('--backup-limit', type=int, default=256 * 1024, help='Max bytes per backed-up file')
     parser.add_argument('--max-nodes', type=int, default=400000)
     parser.add_argument('--json', type=Path, help='Write the full report here (outside any repository)')
-    args = parser.parse_args()
+    args = parser.parse_intermixed_args()  # repos may follow options
     reports = [report(r, args) for r in args.repo]
     if args.json:
         with args.json.open('x', encoding='utf-8') as stream:
