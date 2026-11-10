@@ -28,7 +28,7 @@ description: 安全清理开发电脑的磁盘空间（macOS 为主，兼容 Win
 1. **量空间**：macOS `df -h /System/Volumes/Data`（不是 `df /`），Windows `shutil.disk_usage`。低于 5 GB 先按 [定时与紧急清理](references/routine.md) 的告急顺序腾空间。
 2. **找大户**：在用户的项目根、主目录和 `~/Library` 下用 `du -sh <dir>/* | sort -rh | head` 逐层下钻，不扫整个磁盘。对照 [缓存地图](references/cache-map.md) 认出每个大户属于哪个工具、能清什么、代价多大。地图上没有的路径先查清来源。
 3. **按类别判定**：
-   - 智能体工作树和本地分支：运行 `scripts/worktree_report.py`，规则见 [智能体工作树](references/agent-worktrees.md)。
+   - 智能体工作树和本地分支：运行 `scripts/worktree_report.py`（用户允许删长期闲置的，加 `--stale-hours` 并先用 `scripts/backup_worktree.py` 备份），规则见 [智能体工作树](references/agent-worktrees.md)。
    - Xcode、模拟器、截图录屏、包缓存、Git：见 [清理边界](references/cleanup-boundaries.md)。
    - Android、Godot、Unity、Blender、浏览器测试配置、harness 自身：见 [缓存地图](references/cache-map.md)。
    - 每项检查：是否有进程在用（`lsof`/`pgrep`）、最近是否有人改、能否重建、被 git 跟踪与否。

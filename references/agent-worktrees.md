@@ -34,6 +34,17 @@ python3 <skill-dir>/scripts/worktree_report.py <主仓库> \
 4. **未跟踪文件都不是手写的**：允许 `.godot/`、生成物、从对象存储/CDN 拉下的资源（用 `--asset` 声明）。少量手写小文件可先备份后删；多了就保留。
 5. **HEAD 不只在本机**：已在 `origin/main`、或某个远端分支包含它、或 `git cherry` 显示补丁已进 main、或该分支的 PR 已 MERGED。
 
+### 长期闲置（仅在用户允许时）
+
+用户明确说“超过 N 小时没改的工作树可以删”时，加 `--stale-hours N`。闲置超过 N 小时、没人在用、不在保留名单、HEAD 能查清的工作树，即使有未提交改动、手写文件或只在本机的提交，也判为 `removable_after_backup`（`backup_work`）。删除前必须先完整备份，备份失败就不删：
+
+```bash
+python3 <skill-dir>/scripts/backup_worktree.py <工作树> <备份目录/工作树名-日期> \
+  --asset '<同报告>' --local-patch '<同报告>'
+```
+
+它把已跟踪改动存成 `tracked.diff`（并校验能反向应用）、手写文件复制到 `untracked/`、只在本机的提交打成 `commits.bundle`，写一份 `README.txt` 说明如何恢复。工作树删掉后，它的本地分支保留（有未推送提交时报告里显示 `keep`）。汇报时写明备份位置。
+
 永远保留：
 
 - 主仓库本身（只清它的多余分支）。

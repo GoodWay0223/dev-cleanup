@@ -209,8 +209,9 @@ def inspect_worktree(record, base, args, opened, now):
         info['local_patch_only'] = len(patched)
         tracked = [p for p in tracked if p not in patched]
     info['tracked_changes'] = len(tracked)
+    work = []  # unsaved work: blocks removal unless the worktree is stale and gets a full backup
     if tracked:
-        reasons.append(f'{len(tracked)} uncommitted tracked change(s), e.g. {tracked[0]}')
+        work.append(f'{len(tracked)} uncommitted tracked change(s), e.g. {tracked[0]}')
     untracked = [p for code, p in status_entries(path, True)
                  if code == '??' and not matches(p.rstrip('/'), generated)
                  and not matches(p, generated) and not matches(p.rstrip('/'), args.asset)]
@@ -220,11 +221,21 @@ def inspect_worktree(record, base, args, opened, now):
         if small and len(untracked) <= args.backup_files:
             info['backup_first'] = untracked
         else:
-            reasons.append(f'{len(untracked)} untracked hand-made path(s), e.g. {untracked[0]}')
+            work.append(f'{len(untracked)} untracked hand-made path(s), e.g. {untracked[0]}')
     safety = head_safety(path, info['head'], base, args.gh, branch) if info['head'] else 'unknown'
     info['head_safety'] = safety
-    if safety in ('local_only', 'unknown'):
-        reasons.append('HEAD commit exists only on this machine')
+    if safety == 'unknown':
+        reasons.append('HEAD commit could not be checked')
+    elif safety == 'local_only':
+        work.append('HEAD commit exists only on this machine')
+    idle = info['idle_hours']
+    stale = args.stale_hours is not None and idle is not None and idle >= args.stale_hours
+    if work and stale and not reasons:
+        # The user allowed removing long-idle worktrees once their work is saved outside them.
+        info['backup_work'] = True
+        info['backup_reasons'] = work
+    else:
+        reasons.extend(work)
     if reasons:
         info['verdict'] = 'keep'
         idle = info['idle_hours']
@@ -232,7 +243,8 @@ def inspect_worktree(record, base, args, opened, now):
                 and path.name not in args.keep):
             info['cache_dirs'] = [str(path/c) for c in CACHE_DIR_CANDIDATES if (path/c).is_dir()]
     else:
-        info['verdict'] = 'removable_after_backup' if info['backup_first'] else 'removable'
+        backup = info['backup_first'] or info.get('backup_work')
+        info['verdict'] = 'removable_after_backup' if backup else 'removable'
     return info
 
 
@@ -277,6 +289,9 @@ def main():
     parser.add_argument('--base', default='origin/main', help='Integration ref (default origin/main)')
     parser.add_argument('--gh', help='owner/repo: also treat a MERGED PR for the branch as safe (needs gh)')
     parser.add_argument('--idle-hours', type=float, default=24, help='Keep worktrees changed more recently')
+    parser.add_argument('--stale-hours', type=float,
+                        help='Only when the user allowed it: a worktree idle this long may be removed even with '
+                             'unsaved work, after backup_worktree.py saves that work (verdict removable_after_backup)')
     parser.add_argument('--cache-idle-hours', type=float, default=72,
                         help='For kept but idle worktrees, list import caches that could be dropped')
     parser.add_argument('--keep', action='append', default=[], help='Worktree name or path to always keep')
@@ -306,6 +321,8 @@ def main():
             print(f"{w['verdict']:<23} {w['name']:<24} idle={w.get('idle_hours')}h  {extra}")
             if w['backup_first']:
                 print(f"{'':<23}   back up first: {', '.join(w['backup_first'])}")
+            if w.get('backup_work'):
+                print(f"{'':<23}   stale, back up with backup_worktree.py first: {'; '.join(w['backup_reasons'])}")
             if w['cache_dirs']:
                 print(f"{'':<23}   idle import caches: {', '.join(w['cache_dirs'])}")
         for b in rep['branches']:

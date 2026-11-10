@@ -86,6 +86,8 @@ Windows 用 py -3 替换 python3；analyze 仅包装 Mac JSON 模式。默认私
 
 ~~~bash
 python3 scripts/worktree_report.py /absolute/main-checkout --gh owner/repo --keep release-tools --asset 'game/data/*' --local-patch 'old_text=new_text'
+# only when the user allows removing long-idle worktrees: --stale-hours 72, then back each one up first
+python3 scripts/backup_worktree.py /absolute/worktree /backups/worktree-name-date --asset 'game/data/*'
 ~~~
 
 每个工作树给出 removable / removable_after_backup / keep（附原因），闲置但有改动的工作树会列出可单独清掉的导入缓存。

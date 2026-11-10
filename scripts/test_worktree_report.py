@@ -22,7 +22,7 @@ GIT_ID = ['-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=' + os.devnull,
 
 def args(**overrides):
     values = dict(base='origin/main', gh=None, idle_hours=24, cache_idle_hours=72, keep=[],
-                  generated=[], asset=[], local_patch=[], skip_dir=[], backup_files=5, backup_limit=256 * 1024,
+                  generated=[], asset=[], local_patch=[], stale_hours=None, skip_dir=[], backup_files=5, backup_limit=256 * 1024,
                   max_nodes=100000, json=None)
     values.update(overrides)
     return argparse.Namespace(**values)
@@ -115,6 +115,39 @@ class WorktreeReport(unittest.TestCase):
         self.assertEqual(trees['mixed']['tracked_changes'], 1)
         trees, _ = self.verdicts()
         self.assertEqual(trees['patched']['verdict'], 'keep', 'without --local-patch the edit is work')
+
+    def test_stale_worktree_with_work_needs_backup(self):
+        stale = self.add_worktree('stale', branch='feature/stale')
+        (stale/'src.gd').write_text('extends Node2D\n')
+        (stale/'notes').mkdir()
+        for i in range(7):
+            (stale/'notes'/f'n{i}.md').write_text('work\n')
+        (stale/'local.gd').write_text('extends Node\n')
+        self.run_git(stale, 'add', 'local.gd')
+        self.commit(stale, 'only here')
+        self.age(stale, hours=100)
+        young = self.add_worktree('young')
+        (young/'src.gd').write_text('extends Node2D\n')
+        self.age(young, hours=48)
+        trees, branches = self.verdicts(stale_hours=72)
+        self.assertEqual(trees['stale']['verdict'], 'removable_after_backup', trees['stale'])
+        self.assertTrue(trees['stale']['backup_work'])
+        self.assertEqual(trees['young']['verdict'], 'keep', 'younger than --stale-hours')
+        self.assertNotIn('feature/stale', branches, 'its branch stays and is never listed while checked out')
+        trees, _ = self.verdicts()
+        self.assertEqual(trees['stale']['verdict'], 'keep', 'without --stale-hours unsaved work blocks')
+
+        import backup_worktree
+        dest = Path(self.temp.name)/'backup'/'stale'
+        argv = ['backup_worktree.py', str(stale), str(dest)]
+        with patch.object(sys, 'argv', argv):
+            self.assertEqual(backup_worktree.main(), 0)
+        self.assertIn(b'Node2D', (dest/'tracked.diff').read_bytes())
+        self.assertEqual(len(list((dest/'untracked'/'notes').iterdir())), 7)
+        self.assertTrue((dest/'commits.bundle').is_file(), 'local-only commits are bundled')
+        self.assertEqual((stale/'src.gd').read_text(), 'extends Node2D\n', 'backup never changes the worktree')
+        with patch.object(sys, 'argv', argv), self.assertRaises(FileExistsError):
+            backup_worktree.main()
 
     def test_tracked_change_blocks(self):
         path = self.add_worktree('dirty')
