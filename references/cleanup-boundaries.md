@@ -38,13 +38,13 @@
 3. 不是用户指定保留的长期测试设备，没有仍需的独有应用数据、账号状态、付费素材或未完成问题复现资料。
 4. 删除前重新读取状态和时间；有变化或无法核实就跳过。
 
-不要用创建时间、目录 mtime、模拟器显示名称或 iOS 版本代替最后使用时间。不要为满足规则先关机，也不要一键 `delete all` / `delete unavailable`。
+不要用创建时间、目录 mtime、模拟器显示名称或 iOS 版本代替最后使用时间。不要为满足规则先关机。`xcrun simctl delete unavailable` 只删除运行时已不存在、无法启动的设备，可以作为常规项。`delete all` 只在用户明确说模拟器都不要了时使用；删完后项目里记录的 UDID（如 `udid.txt`、脚本、记忆文件）会失效，要一并更新。
 
 通过 `xcrun simctl delete <exact-UUID>` 删除，在新的设备清单中确认 UUID 不存在，并核实实际数据目录已消失。保留运行时；每台设备占用独立数据，运行时可以共享，不能把运行时大小重复计入释放量。APFS 回收可能延迟。
 
 ## 独立测试截图、抽帧与录屏
 
-默认超过 7 × 24 小时。取文件 mtime、birthtime 和可靠的路径/导出时间中的**最新值**；新复制的旧录像仍保留。Windows 使用支持 `st_birthtime` 的 Python 3.12+ 或 PowerShell `CreationTimeUtc` 读取创建时间；不能把不同平台含义不同的 `ctime` 直接当统一创建时间。无法得到可靠日期时保留。
+默认超过 7 × 24 小时；用户可调短（多会话并行出图的机器常用 2 天）。最近仍在写入的截图目录说明有会话在用，整个跳过。取文件 mtime、birthtime 和可靠的路径/导出时间中的**最新值**；新复制的旧录像仍保留。Windows 使用支持 `st_birthtime` 的 Python 3.12+ 或 PowerShell `CreationTimeUtc` 读取创建时间；不能把不同平台含义不同的 `ctime` 直接当统一创建时间。无法得到可靠日期时保留。
 
 至少需要一种可信来源：
 
@@ -63,7 +63,8 @@
 - npm/pnpm/pip/Homebrew/SwiftPM 只处理已确认可再下载的缓存，优先本机工具的保守 prune/清理命令。先核实当前版本帮助和配置；不使用 force，不清掉依赖、离线唯一副本或插件。工具可能修改的路径也应预先明确，活动安装期间跳过。
 - Git “旧记录”不等于垃圾。允许常规维护：`git gc --prune=2.weeks.ago`，保留默认 reflog/worktree 保留期；若当前配置缩短保留期，跳过或明确使用正常的保守设置。
 - 以 `git rev-parse --path-format=absolute --git-common-dir` 对共享对象库去重。清理前后保存关联 checkout 的 HEAD、已跟踪状态、工作/暂存差异摘要及 `git show-ref`；有 Git 写操作或锁文件时跳过。
-- 禁止重写历史、强制 prune、到期全部 reflog、删除 stash/refs、自动移除分支或 worktree。旧副本也可能含未推送工作；它们不属于常规清理。用户另行指明具体 worktree 时，先证明提交已保留并优先使用 Codex 的可恢复归档能力，不手动移除 managed worktree。
+- 禁止重写历史、强制 prune、到期全部 reflog、删除 stash/tags、删除或改动远端分支。
+- 工作树和本地分支只在用户授权清理时处理，且必须逐个通过 [智能体工作树](agent-worktrees.md) 的判定（`scripts/worktree_report.py`）：没人在用、闲置、无未提交改动、无手写未跟踪文件、提交已在远端或 PR 已合并。旧副本可能含未推送工作，判定不过就保留。Codex 托管的 worktree 用 Codex 的归档功能，不手动移除。
 
 ## 保存记录
 

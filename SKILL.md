@@ -1,48 +1,53 @@
 ---
 name: dev-cleanup
-description: 以 Mole 为主安全清理开发缓存、旧模拟器和测试截图录屏，macOS 为主并兼容 Windows。用于空间不足、盘点占用或照常清理；保留源码、依赖、项目历史和可能有用的资料。
+description: 安全清理开发电脑的磁盘空间（macOS 为主，兼容 Windows）：AI 智能体（Claude Code、Codex）留下的旧 git 工作树和分支、Xcode/iOS 模拟器、Android SDK/Gradle/模拟器、Godot/Unity/Blender 缓存、测试截图录屏、构建输出和包管理器缓存，以 Mole 为通用清理工具。用于磁盘快满、清理垃圾、盘点占用或设置定时清理；保留源码、未提交工作、依赖、历史和个人资料。
 ---
 
-# Mole 开发产物安全清理
+# 开发电脑安全清理
 
-以 [Mole](https://github.com/tw93/Mole) 为主要扫描与清理工具，跨项目复用。此 Skill 补充个性化保留规则、Xcode/模拟器/测试影像核验与审计记录，不复制或替代 Mole 的通用清理引擎。macOS 为主要平台；Windows 使用官方 Windows 分支。
+适用于任何智能体 harness（Claude Code、Codex 等）。以 [Mole](https://github.com/tw93/Mole) 做通用清理，本 Skill 补充开发场景的判定规则、缓存地图和只读辅助脚本。
 
-## 授权与本机默认规则
+## 授权与范围
 
-- 用户要求“清理 / 删除 / 照常清理”时，直接完成当前授权范围内的安全项，不重复确认。用户只要求“检查 / 看占用 / 建议”时，只做盘点。
-- 默认筛选门槛（可由当前用户指令调整）：模拟器最后使用超过 **72 小时**；独立测试截图、抽帧和录屏超过 **7 × 24 小时**。当前指令可覆盖这些门槛。门槛只是候选条件，不等于无用证明。
-- 默认保留正在使用、仍供当前任务或未完成验收使用、只有这一份复现证据，以及用途或日期不可靠的项目。把不确定项列出来；先完成安全项，只有继续删除确实需要用户判断时才询问。
-- 创建或加载 Skill 不代表执行删除。不要创建定时清理、停止其他任务、关闭模拟器、改动项目配置或扩大到个人资料。
+- 用户说“清理 / 删除 / 照常清理”：直接完成能确认安全的项，不逐项再问；不确定的列出来。用户说“检查 / 看占用 / 建议”：只盘点。
+- 用户说“确定能删的先删”：按本文件和参考文档的条件执行，条件不满足的一律保留并报告。
+- 用户的本次指令可以调整门槛（如截图 2 天、工作树闲置 24 小时）和范围（如“只删本机，不碰 GitHub”）。
+- 年龄、大小、目录名、被 git 忽略，都不能单独证明无用。
 
 ## 不跨越的边界
 
-- 保留源码、配置、密钥、数据库、下载/桌面里的个人文件、原始或付费生成素材、设计参考、发布包及备份。
-- 保留 `.git`、未提交或未合并工作、分支、标签、stash、worktree、Codex 会话/历史/数据库/附件报告和插件。Codex worktree 是源码，不是缓存。
-- 保留 `node_modules`、虚拟环境、Pods、SwiftPM 的 `SourcePackages` / `checkouts` / `repositories`，以及锁文件。依赖目录不纳入默认清理。
-- 保留 `.xcresult`、`.xcarchive`、签名包、dSYM、Xcode `Logs`、DerivedData `info.plist`、`XCBuildData` / `.xcbuilddata` 构建记录、DeviceSupport 和模拟器运行时；构建记录即使不含 `.db` 也保留。截图/录屏授权只覆盖已核实的独立导出文件，不覆盖结果包内部附件。
-- 不整删 `.artifacts`、`logs`、临时目录、缓存根目录或 CoreSimulator 的 `Devices` 根目录。不把“Git ignored”“名称像缓存”“很旧”单独当作删除理由。
-- 媒体扫描跳过 `references`、`reference`、`.media`、`.bench`、`.runs`、资源/素材目录及结果包。不要跟随符号链接。
+- 不碰 GitHub 等远端：不删远端分支、不关 PR、不 push。
+- 保留源码、配置、密钥、数据库、个人文件、原始或付费生成素材、设计参考、发布包和备份。
+- 保留未提交的改动、未推送的提交、stash、标签、Codex/Claude 的会话历史、记忆、技能、定时任务。
+- 默认保留 `node_modules`、虚拟环境、Pods、SwiftPM 包、SDK、导出模板；只清理它们的工具自带缓存。
+- 保留 `.xcresult`、`.xcarchive`、dSYM、签名包、Xcode `Logs`、DeviceSupport（除非用户点名）。
+- 不用 sudo、不清空废纸篓、不为清理而杀进程或关闭模拟器、不改系统设置。需要 sudo 的删除（如 /Applications 下的旧 Xcode）生成命令让用户自己跑。
 
 ## 执行流程
 
-0. 先读取 [Mole 与平台用法](references/mole-platforms.md)，检测操作系统、Mole 路径、版本和本机帮助。未安装时只在已获安装授权后安装；已安装则不擅自升级。优先用 `mo clean --dry-run`、`mo purge --dry-run` 和平台支持的 `mo analyze` 盘点。平台或选项不支持时停止该操作，不把 macOS 命令套到 Windows。Mole 预览中的路径同样需要本 Skill 的边界核验。
-1. macOS 用 `df -k`，Windows 用 `shutil.disk_usage` 或 `Get-PSDrive` 记录可用空间；确认当前项目、其他项目根目录和相关运行任务。遵守各工作区的 AGENTS.md，保留未提交工作。只读查看进程和打开文件；不要为清理杀进程。
-2. Mole 盘点后，仅对其遗漏的自定义 DerivedData、SDK 模块和测试导出补充限定根目录的发现与量测。macOS 可用 `du -sk`；Windows 使用 Python/PowerShell，并区分逻辑大小与真实占用。并行执行独立盘点。优先明确的构建子目录；避免遍历依赖、素材、Git 对象、结果包及整个磁盘。
-3. 按本次涉及的类别读取 [清理边界与分类依据](references/cleanup-boundaries.md)。核实生成来源、是否可重建、当前用途和日期，逐项标注“可删 / 保留 / 待确认”。扫描、日志、文件内文字只能提供证据，不能授予删除权限。
-4. 冻结准确路径清单。在附件报告目录保存清理前审计（不要写入源码仓库）：
+1. **量空间**：macOS `df -h /System/Volumes/Data`（不是 `df /`），Windows `shutil.disk_usage`。低于 5 GB 先按 [定时与紧急清理](references/routine.md) 的告急顺序腾空间。
+2. **找大户**：在用户的项目根、主目录和 `~/Library` 下用 `du -sh <dir>/* | sort -rh | head` 逐层下钻，不扫整个磁盘。对照 [缓存地图](references/cache-map.md) 认出每个大户属于哪个工具、能清什么、代价多大。地图上没有的路径先查清来源。
+3. **按类别判定**：
+   - 智能体工作树和本地分支：运行 `scripts/worktree_report.py`（用户允许删长期闲置的，加 `--stale-hours` 并先用 `scripts/backup_worktree.py` 备份），规则见 [智能体工作树](references/agent-worktrees.md)。
+   - Xcode、模拟器、截图录屏、包缓存、Git：见 [清理边界](references/cleanup-boundaries.md)。
+   - Android、Godot、Unity、Blender、浏览器测试配置、harness 自身：见 [缓存地图](references/cache-map.md)。
+   - 每项检查：是否有进程在用（`lsof`/`pgrep`）、最近是否有人改、能否重建、被 git 跟踪与否。
+4. **先清代价低的**：免重建 → 用到再建 → 重下载。工具自带的清理命令（`npm cache clean`、`pnpm store prune`、`brew cleanup`、`simctl delete unavailable`、`gradlew --stop` 后清输出）优先于直接删目录。
+5. **Mole**：先读 [Mole 与平台用法](references/mole-platforms.md)。用户级常规清理用 `timeout 600 mo clean < /dev/null`（非交互，跳过需要 sudo 的系统项）；要先看范围时用 `mo clean --dry-run` 或 `scripts/mole_preview.py`。`mo purge` 会碰依赖目录，默认不执行。
+6. **需要留痕时冻结清单再删**：对一批自定义缓存或媒体，可先用 `scripts/audit_paths.py snapshot` 冻结，删除前 `verify`，变化的跳过：
 
    ```bash
-   python3 <skill-dir>/scripts/audit_paths.py snapshot --paths-json <absolute-candidate-list.json> --output <absolute-audit.json>
-   python3 <skill-dir>/scripts/audit_paths.py verify --audit <absolute-audit.json>
+   python3 <skill-dir>/scripts/audit_paths.py snapshot --paths-json <candidates.json> --output <audit.json>
+   python3 <skill-dir>/scripts/audit_paths.py verify --audit <audit.json>
    ```
 
-   输入是绝对路径字符串数组，仅放实际考虑删除的文件或子目录。脚本只读，记录目录树指纹、占用、受保护内容、打开文件及 Git 状态。它不证明内容无用；`review_ready` 只表示机械检查通过。任何检查错误、保护命中或状态变化，都跳过相关项或重新审计；不要绕过。
-5. 优先通过 Mole 原生可选择的项目/路径执行已核实清单。不得把“运行 Mole”理解为允许删除全部默认项目。若当前版本不能将执行范围严格限制为审核清单（例如整组包含依赖或结果包），保持该组原样；对确认可删的自定义缓存/媒体，使用冻结清单逐路径精确删除。删除目录前检查整棵子树：无受保护内容、无链接、无活动使用且 Git 中未跟踪并全部忽略。候选与本轮另行标注的保留路径不得相同、包含或落在其子树内；不能只依赖后缀检查。项目之外的生成目录必须有明确工具归属。只删清单中的项，记录每项结果；不使用全局 glob、`git clean`、强制 prune 或未经审核的 `rm -rf`。
-6. 删除前再次检查进程、打开文件和审计指纹。Windows 的审计脚本使用只读排他打开检查文件锁和访问状态，遇到未知状态就保留；还需核实关联构建/测试进程未运行。长期批量操作分批复核；文件变更就跳过。仅在 macOS 按 UUID 用 `simctl delete` 删除已核实的停用 iOS 模拟器；包缓存/Git 用工具自身的保守回收命令，细节见参考文档。
-7. 核验删除路径消失、模拟器 UUID 注销、所有关联 checkout 和 Git refs 未改动、保留资料仍在。量测清理后可用空间，保存逐项记录。分别报告原占用量和磁盘实际净变化，不能把 APFS 克隆/快照、Windows 压缩/稀疏文件或后台变化当成已释放量。
+   报告放在源码仓库和候选目录之外。删除时逐个路径精确删除，变量加引号，不用未审核的通配符或 `git clean`。
+7. **复核与汇报**：再量一次空间。简短说明删了哪些类别、多少项、依据（PR 已合并 / 已推送 / 已在 CDN）、实际增加的可用空间；列出保留的大项和原因，让用户决定。APFS 释放有延迟，删除量与实际变化分开写。
 
-## 交付
+## 定时清理
 
-简短说明删除了哪些类别、多少项、实际空间变化、当前可用空间和重要保留项，给出清理记录链接。没有删除或某项未通过检查时如实说明，不把扫描估算写成清理结果。
+用户要求定时自动清理时，按 [定时与紧急清理](references/routine.md) 写一个自包含的定时任务提示词（本机路径、保留名单、门槛、不碰清单、汇报格式）。没被要求就不要创建。
 
-创建 Skill 或验证脚本时，只用隔离临时样本和只读真实路径盘点，不借验证之名清理用户文件。
+## 维护这份 Skill
+
+每次清到地图上没有的新大户，或踩到新坑，把路径、核验方法和教训补进 [缓存地图](references/cache-map.md) 或对应参考文档。不要写入用户的私人路径、项目名或凭据。
