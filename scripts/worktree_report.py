@@ -142,7 +142,9 @@ def only_local_patch(tree, rel, subs):
     for old, new in subs:
         expected = expected.replace(old, new)
     try:
-        return target.read_bytes() == expected and expected != result.stdout
+        # Compare without line-ending noise: Windows checkouts often hold CRLF while the blob has LF.
+        actual = target.read_bytes().replace(b'\r\n', b'\n')
+        return actual == expected.replace(b'\r\n', b'\n') and expected != result.stdout
     except OSError:
         return False
 
