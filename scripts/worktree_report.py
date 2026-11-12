@@ -252,15 +252,18 @@ def inspect_worktree(record, base, args, opened, now):
 
 def inspect_branches(repo, base, checked_out, gh_repo):
     rows = []
-    refs = git(repo, 'for-each-ref', '--format=%(refname:short)', 'refs/heads').stdout.decode().split()
+    # lstrip=2 instead of :short, which turns pr/1 into heads/pr/1 when a remote is named "pr";
+    # git branch -D only accepts the plain name, and full refs keep the checks unambiguous.
+    refs = git(repo, 'for-each-ref', '--format=%(refname:lstrip=2)', 'refs/heads').stdout.decode().split()
     base_name = base.split('/', 1)[-1]
     for b in refs:
         if b in checked_out or b == base_name:
             continue
-        cherry = git(repo, 'cherry', base, b).stdout.decode()
+        full = 'refs/heads/' + b
+        cherry = git(repo, 'cherry', base, full).stdout.decode()
         if not any(line.startswith('+') for line in cherry.splitlines()):
             why = 'all commits in base'
-        elif git(repo, 'branch', '-r', '--contains', b).stdout.strip():
+        elif git(repo, 'branch', '-r', '--contains', full).stdout.strip():
             why = 'tip is on a remote branch'
         elif gh_repo and pr_state(gh_repo, b) == 'MERGED':
             why = 'PR merged'

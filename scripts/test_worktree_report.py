@@ -194,6 +194,15 @@ class WorktreeReport(unittest.TestCase):
         self.assertEqual(branches['unpushed']['verdict'], 'keep')
         self.assertNotIn('feature/pushed', branches, 'checked-out branches are never listed')
 
+    def test_branch_names_stay_plain_when_a_remote_shares_the_prefix(self):
+        self.run_git(self.main, 'remote', 'add', 'pr', str(self.remote))
+        self.run_git(self.main, 'push', '-q', 'origin', 'main:x')
+        self.run_git(self.main, 'fetch', '-q', 'pr')  # creates refs/remotes/pr/x
+        self.run_git(self.main, 'branch', 'pr/x', 'origin/main')
+        _, branches = self.verdicts()
+        self.assertIn('pr/x', branches, sorted(branches))
+        self.assertEqual(branches['pr/x']['verdict'], 'deletable')
+
     def test_small_untracked_script_needs_backup_large_set_blocks(self):
         small = self.add_worktree('small')
         (small/'probe.gd').write_text('# debug probe\n')
